@@ -30,9 +30,23 @@ async function run() {
 
         const DB = client.db('EcoTrack');
         const challangesCollection = DB.collection('challanges');
+        const tipsCollection = DB.collection('tips');
+        const eventsCollection = DB.collection('events');
 
         app.get("/challanges", async (req, res) => {
-            const cursor = challangesCollection.find();
+            const cursor = challangesCollection.find().limit(parseInt(req.query.dataLimit));
+            const data = await cursor.toArray();
+            res.send(data);
+        });
+
+        app.get("/tips", async (req, res) => {
+            const cursor = tipsCollection.find().limit(parseInt(req.query.dataLimit));
+            const data = await cursor.toArray();
+            res.send(data);
+        });
+
+        app.get("/events", async (req, res) => {
+            const cursor = eventsCollection.find().limit(parseInt(req.query.dataLimit));
             const data = await cursor.toArray();
             res.send(data);
         });
