@@ -35,9 +35,17 @@ async function run() {
         const userChallenges = DB.collection('userChallenges');
 
         app.get("/challenges", async (req, res) => {
-            const cursor = challengesCollection.find().limit(parseInt(req.query.dataLimit));
-            const data = await cursor.toArray();
-            res.send(data);
+            const emailQuery = req.query.email;
+            if (emailQuery) {
+                const cursor = challengesCollection.find({createdBy: emailQuery});
+                const data = await cursor.toArray();
+                res.send(data);
+            }
+            else {
+                const cursor = challengesCollection.find().limit(parseInt(req.query.dataLimit));
+                const data = await cursor.toArray();
+                res.send(data);
+            }
         });
 
         app.post("/challenges", async (req, res) => {
@@ -59,6 +67,10 @@ async function run() {
                 const result = await challengesCollection.updateOne(query, { $inc: {participants: 1} });
                 res.send(result);
             }
+            else {
+                const result = await challengesCollection.updateOne(query, { $set: {impactMetric: patchReq.dataForPatch} });
+                res.send(result);
+            }
         });
 
         app.post("/userChallenges", async (req, res) => {
@@ -68,9 +80,25 @@ async function run() {
         });
 
         app.get("/userChallenges", async (req, res) => {
-            const {challengeId, userId} = req.query
-            const data = await userChallenges.findOne({challengeId, userId});
-            res.send(data);
+            const {challengeId, userId} = req.query;
+            if (!challengeId) {
+                const cursor = userChallenges.find({userId});
+                const data = await cursor.toArray();
+                res.send(data);
+            }
+            else {
+                const data = await userChallenges.findOne({challengeId, userId});
+                res.send(data);
+            }
+        });
+
+        app.patch("/userChallenges", async (req, res) => {
+            const {challengeId, userId} = req.query;
+            const patchReq = req.body;
+            if (patchReq.increment) {
+                const result = await userChallenges.updateOne({challengeId, userId}, { $inc: {progress: 1} });
+                res.send(result);
+            }
         });
 
         app.get("/tips", async (req, res) => {
