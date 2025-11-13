@@ -56,12 +56,27 @@ async function run() {
 
         app.get("/challenges/:id", async (req, res) => {
             const query = { _id: new ObjectId(req.params.id) }
+            if (!ObjectId.isValid(req.params.id)) {
+                return res.status(404).json({ message: "Not Found" });
+            }
             const data = await challengesCollection.findOne(query);
+            res.send(data);
+        });
+
+        app.delete("/challenges/:id", async (req, res) => {
+            const query = { _id: new ObjectId(req.params.id) }
+            if (!ObjectId.isValid(req.params.id)) {
+                return res.status(404).json({ message: "Not Found" });
+            }
+            const data = await challengesCollection.deleteOne(query);
             res.send(data);
         });
 
         app.patch("/challenges/:id", async (req, res) => {
             const query = { _id: new ObjectId(req.params.id) }
+            if (!ObjectId.isValid(req.params.id)) {
+                return res.status(404).json({ message: "Not Found" });
+            }
             const patchReq = req.body;
             if (patchReq.increment) {
                 const result = await challengesCollection.updateOne(query, { $inc: {participants: 1} });
