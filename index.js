@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
     require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 3000;
 
 // middleware
@@ -29,13 +29,47 @@ async function run() {
         await client.connect();
 
         const DB = client.db('EcoTrack');
-        const challangesCollection = DB.collection('challanges');
+        const challengesCollection = DB.collection('challenges');
         const tipsCollection = DB.collection('tips');
         const eventsCollection = DB.collection('events');
+        const userChallenges = DB.collection('userChallenges');
 
-        app.get("/challanges", async (req, res) => {
-            const cursor = challangesCollection.find().limit(parseInt(req.query.dataLimit));
+        app.get("/challenges", async (req, res) => {
+            const cursor = challengesCollection.find().limit(parseInt(req.query.dataLimit));
             const data = await cursor.toArray();
+            res.send(data);
+        });
+
+        app.post("/challenges", async (req, res) => {
+            const dataToPost = req.body;
+            const result = challengesCollection.insertOne(dataToPost);
+            res.send(result);
+        });
+
+        app.get("/challenges/:id", async (req, res) => {
+            const query = { _id: new ObjectId(req.params.id) }
+            const data = await challengesCollection.findOne(query);
+            res.send(data);
+        });
+
+        app.patch("/challenges/:id", async (req, res) => {
+            const query = { _id: new ObjectId(req.params.id) }
+            const patchReq = req.body;
+            if (patchReq.increment) {
+                const result = await challengesCollection.updateOne(query, { $inc: {participants: 1} });
+                res.send(result);
+            }
+        });
+
+        app.post("/userChallenges", async (req, res) => {
+            const postData = req.body;
+            const result = await userChallenges.insertOne(postData);
+            res.send(result);
+        });
+
+        app.get("/userChallenges", async (req, res) => {
+            const {challengeId, userId} = req.query
+            const data = await userChallenges.findOne({challengeId, userId});
             res.send(data);
         });
 
