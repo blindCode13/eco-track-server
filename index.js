@@ -36,10 +36,42 @@ async function run() {
 
         app.get("/challenges", async (req, res) => {
             const emailQuery = req.query.email;
+            const filterQuery = req.query.filters;
             if (emailQuery) {
                 const cursor = challengesCollection.find({createdBy: emailQuery});
                 const data = await cursor.toArray();
                 res.send(data);
+            }
+            else if (filterQuery) {
+                const {category, startDate, endDate, minParticipant, maxParticipant} = JSON.parse(filterQuery);
+                let filter = {}
+                if (category) {
+                    filter.category = {$in: [category]}
+                }
+
+                if (startDate) {
+                    filter.startDate =  {$gte: startDate}
+                }
+                if (endDate) {
+                    filter.endDate =  {$lte: endDate}
+                }
+                if (startDate && endDate) {
+                    filter.startDate = {$gte: startDate, $lte: endDate}
+                }
+
+                if (minParticipant) {
+                    filter.participants = {$gte: parseInt(minParticipant)}
+                }
+                if (maxParticipant) {
+                    filter.participants = {$lte: parseInt(maxParticipant)}
+                }
+                if (minParticipant && maxParticipant) {
+                    filter.participants = {$gte: parseInt(minParticipant), $lte: parseInt(maxParticipant)}
+                }
+
+                const cursor = challengesCollection.find(filter);
+                const data = await cursor.toArray();
+                res.send(data)
             }
             else {
                 const cursor = challengesCollection.find().limit(parseInt(req.query.dataLimit));
@@ -55,28 +87,28 @@ async function run() {
         });
 
         app.get("/challenges/:id", async (req, res) => {
-            const query = { _id: new ObjectId(req.params.id) }
             if (!ObjectId.isValid(req.params.id)) {
                 return res.status(404).json({ message: "Not Found" });
             }
+            const query = { _id: new ObjectId(req.params.id) }
             const data = await challengesCollection.findOne(query);
             res.send(data);
         });
 
         app.delete("/challenges/:id", async (req, res) => {
-            const query = { _id: new ObjectId(req.params.id) }
             if (!ObjectId.isValid(req.params.id)) {
                 return res.status(404).json({ message: "Not Found" });
             }
+            const query = { _id: new ObjectId(req.params.id) }
             const data = await challengesCollection.deleteOne(query);
             res.send(data);
         });
 
         app.patch("/challenges/:id", async (req, res) => {
-            const query = { _id: new ObjectId(req.params.id) }
             if (!ObjectId.isValid(req.params.id)) {
                 return res.status(404).json({ message: "Not Found" });
             }
+            const query = { _id: new ObjectId(req.params.id) }
             const patchReq = req.body;
             if (patchReq.increment) {
                 const result = await challengesCollection.updateOne(query, { $inc: {participants: 1} });
@@ -122,9 +154,27 @@ async function run() {
             res.send(data);
         });
 
+        app.get("/tips/:id", async (req, res) => {
+            if (!ObjectId.isValid(req.params.id)) {
+                return res.status(404).json({ message: "Not Found" });
+            }
+            const query = { _id: new ObjectId(req.params.id) }
+            const data = await tipsCollection.findOne(query);
+            res.send(data);
+        });
+
         app.get("/events", async (req, res) => {
             const cursor = eventsCollection.find().limit(parseInt(req.query.dataLimit));
             const data = await cursor.toArray();
+            res.send(data);
+        });
+
+        app.get("/events/:id", async (req, res) => {
+            if (!ObjectId.isValid(req.params.id)) {
+                return res.status(404).json({ message: "Not Found" });
+            }
+            const query = { _id: new ObjectId(req.params.id) }
+            const data = await eventsCollection.findOne(query);
             res.send(data);
         });
 
