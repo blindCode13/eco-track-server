@@ -52,7 +52,7 @@ async function run() {
                 }
             ]).toArray();
 
-            res.send({totalChallenges, joinedChallenges, participants: totalParticipants[0].total});
+            res.send({totalChallenges, joinedChallenges, participants: totalParticipants[0]?.total || 0});
         });
 
         app.get("/challenges", async (req, res) => {
