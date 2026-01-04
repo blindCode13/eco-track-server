@@ -34,6 +34,27 @@ async function run() {
         const eventsCollection = DB.collection('events');
         const userChallenges = DB.collection('userChallenges');
 
+        app.get("/userStats", async (req, res) => {
+            const {email} = req.query;
+            const totalChallenges = await challengesCollection.countDocuments({createdBy: email});
+            const joinedChallenges = await userChallenges.countDocuments({userId: email});
+            const totalParticipants = await challengesCollection.aggregate([
+                {
+                    $match: {
+                        createdBy: email
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: {$sum: "$participants"}
+                    }
+                }
+            ]).toArray();
+
+            res.send({totalChallenges, joinedChallenges, participants: totalParticipants[0].total});
+        });
+
         app.get("/challenges", async (req, res) => {
             const emailQuery = req.query.email;
             const filterQuery = req.query.filters;
@@ -102,6 +123,29 @@ async function run() {
             const query = { _id: new ObjectId(req.params.id) }
             const data = await challengesCollection.deleteOne(query);
             res.send(data);
+        });
+
+        app.patch("/challenges/edit/:id", async (req, res) => {
+            if (!ObjectId.isValid(req.params.id)) {
+                return res.status(404).json({ message: "Not Found" });
+            }
+            const query = { _id: new ObjectId(req.params.id) }
+            const patchReq = req.body;
+
+            const result = await challengesCollection.updateOne(query, {
+                $set: {
+                    title: patchReq.title,
+                    category: patchReq.category,
+                    description: patchReq.description,
+                    duration: patchReq.duration,
+                    target: patchReq.target,
+                    impactMetric: patchReq.impactMetric,
+                    startDate: patchReq.startDate,
+                    endDate: patchReq.endDate,
+                    imageUrl: patchReq.imageUrl
+                }
+            });
+            res.send(result);
         });
 
         app.patch("/challenges/:id", async (req, res) => {
